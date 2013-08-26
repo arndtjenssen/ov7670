@@ -16,23 +16,23 @@
         ------- -------
       --|PB0       PA0|--  AL422_DO0
       --|PB1       PA1|--  AL422_DO1
-      --|PB2       PA2|--  AL422_DO2
+VSYNC --|PB2       PA2|--  AL422_DO2
       --|PB3       PA3|--  AL422_DO3
       --|PB4       PA4|--  AL422_DO4
       --|PB5       PA5|--  AL422_DO5
       --|PB6       PA6|--  AL422_DO6
       --|PB7       PA7|--  AL422_DO7
-      --|RST      AREF|--
+RST   --|RESET    AREF|--
       --|VCC       GND|--
       --|GND      AVCC|--
       --|XTAL2     PC7|--  AL422_WRST
       --|XTAL      PC6|--  AL422_RCK
       --|PD0       PC5|--  AL422_RRST
-      --|PD1       PC4|--  HREF
+      --|PD1       PC4|--
       --|PD2       PC3|--  AL422_WEN
-      --|PD3       PC2|--  VSYNC
-      --|PD4       PC1|--
-      --|PD5       PC0|--
+HREF  --|PD3       PC2|--
+      --|PD4       PC1|--  SIOO
+      --|PD5       PC0|--  SIOC
       --|PD6       PD7|--
         ---------------
 
@@ -59,11 +59,14 @@
 #define AL422_WRST          _BV(PINC7)          // Write Reset (active low)
 #define AL422_RCK           _BV(PINC6)          // Read clock
 #define AL422_RRST          _BV(PINC5)          // Read Reset (active low)
-#define HREF                _BV(PINC4)					// HREF
 #define AL422_WEN           _BV(PINC3)          // Write Enable (active low) - labeled WR on camera pin
-#define VSYNC               _BV(PINC2)					// VSYNC
+// attach VSYNC to PB2 (INT2)
+// attach HREF to PD3 (INT1)
+// attach RST (camera reset) to RESET (also FTDI/Serial reset line)
+// attach SIOC to PC1 (SDA) - I2C
+// attach SIOO to PC0 (SCL) - I2C
 // attach OE and PWDN to ground
-// attach RST (camera reset) to FTDI/Serial reset line
+
 
 
 void static inline setup_ports() {
