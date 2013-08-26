@@ -1,0 +1,11 @@
+ov7670 breadboard
+
+R1	Resistor 10K
+R2	Resistor 4.7K
+R3	Resistor 4.7K
+C1	Ceramik Capacitor 22 pF
+C2	Ceramik Capacitor 22 pF
+C3	Ceramik Capacitor 100 nF
+C4	Ceramik Capacitor 100 nF
+Q1	Quarz, 16MHz
+IC1	ATmega1284p
