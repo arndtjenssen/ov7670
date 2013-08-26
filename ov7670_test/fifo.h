@@ -1,7 +1,7 @@
 /*
  * fifo.h
  *
- * Defines for AL422
+ * Defines for AL422 fifo
  *
  *  Created on: Aug 18, 2013
  *      Author: arndtjenssen

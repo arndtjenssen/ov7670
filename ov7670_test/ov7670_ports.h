@@ -1,7 +1,7 @@
 /*
  * ov7670_ports.h
  *
- * Defines ports and pins uses by OV7670 fifo camera module
+ * Defines ports and pins used by OV7670 fifo camera module
  *
  *  Created on: Aug 18, 2013
  *      Author: arndtjenssen
@@ -9,6 +9,34 @@
 
 #ifndef OV7670_PORTS_H_
 #define OV7670_PORTS_H_
+
+
+/*
+         ATMEGA 1284P
+        ------- -------
+      --|PB0       PA0|--  AL422_DO0
+      --|PB1       PA1|--  AL422_DO1
+      --|PB2       PA2|--  AL422_DO2
+      --|PB3       PA3|--  AL422_DO3
+      --|PB4       PA4|--  AL422_DO4
+      --|PB5       PA5|--  AL422_DO5
+      --|PB6       PA6|--  AL422_DO6
+      --|PB7       PA7|--  AL422_DO7
+      --|RST      AREF|--
+      --|VCC       GND|--
+      --|GND      AVCC|--
+      --|XTAL2     PC7|--  AL422_WRST
+      --|XTAL      PC6|--  AL422_RCK
+      --|PD0       PC5|--  AL422_RRST
+      --|PD1       PC4|--  HREF
+      --|PD2       PC3|--  AL422_WEN
+      --|PD3       PC2|--  VSYNC
+      --|PD4       PC1|--
+      --|PD5       PC0|--
+      --|PD6       PD7|--
+        ---------------
+
+*/
 
 #define DATA_DDR						DDRA
 #define DATA_PORT						PORTA

@@ -1,6 +1,8 @@
 /*
  * SimpleI2c.cpp
  *
+ * Encapsulates I2C protocol
+ *
  *  Created on: Jul 23, 2013
  *      Author: arndtjenssen
  */
