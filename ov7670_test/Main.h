@@ -11,24 +11,11 @@
 #include <Arduino.h>
 #include <util/delay.h>
 #include "Streaming.h"
-#include "camera_config.h"
-#include "fifo.h"
-#include "SimpleI2C.h"
-
-#define VSYNC_INT 2
-#define HREF_INT 1
+#include "OV7670.h"
 
 
 #define SERIAL_INFO
-//#define SERIAL_DEBUG
-#define RGB888_SERIAL_OUT
-
-
-#define MODE_RGB444 0
-#define MODE_RGB555 1
-#define MODE_RGB565 2
-#define MODE_YUV 		3
-
+#define SERIAL_DEBUG
 
 //
 // time definitions against ms

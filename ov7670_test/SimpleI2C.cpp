@@ -11,12 +11,15 @@
 
 
 SimpleI2CClass::SimpleI2CClass() {
-	//init();
+	initialized = false;
 }
 
 void SimpleI2CClass::init() {
-  TWSR &=~3; //disable prescaler for TWI
-  TWBR = 72; //set to 100khz
+	if (!initialized) {
+		TWSR &=~3; //disable prescaler for TWI
+		TWBR = 72; //set to 100khz
+		initialized = true;
+	}
 }
 
 uint8_t SimpleI2CClass::read_byte(uint8_t slave_address, uint8_t *data) {
@@ -151,6 +154,8 @@ uint8_t SimpleI2CClass::sccb_write(uint8_t slave_address, uint8_t address, uint8
 SCCB_WRITE_END_PROC:
   // stop sending conditions
   TWCR = _BV(TWINT) | _BV(TWSTO) | _BV(TWEN);
+
+  _delay_ms(10);
 
   return bRet;
 }

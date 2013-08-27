@@ -10,6 +10,8 @@
 #ifndef OV7670_PORTS_H_
 #define OV7670_PORTS_H_
 
+#include <avr/io.h>
+
 
 /*
          ATMEGA 1284P
@@ -36,7 +38,15 @@ HREF  --|PD3       PC2|--
       --|PD6       PD7|--
         ---------------
 
+GND  --  OE, PWDN
+
 */
+
+
+#define VSYNC_INT 2
+#define HREF_INT 1
+
+
 
 #define DATA_DDR						DDRA
 #define DATA_PORT						PORTA
