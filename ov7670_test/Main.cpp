@@ -1,7 +1,7 @@
 /*
  * main.c
  *
- * Code taken from a couple of sources, but esp from: http://mbed.org/users/diasea/notebook/ov7670_FIFO_AL422B/
+ *  Code was inspired from a couple of sources, esp from: http://mbed.org/users/diasea/notebook/ov7670_FIFO_AL422B/
  *
  *  Created on: Jul 21, 2013
  *      Author: arndtjenssen
