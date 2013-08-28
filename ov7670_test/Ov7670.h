@@ -42,10 +42,18 @@ public:
 	void vsync_handler();
 	void href_handler();
 	void serialOutput(bool enabled);
+	void nightMode(bool enable);
+	void contrast(int8_t);
+	void brightness(int8_t);
+	void specialEffect(uint8_t);
+	void edgeEnhancement(uint8_t);
+	void denoise(uint8_t);
 
 	uint8_t init_success;
 	void (*bufferFullFunctionPtr)(uint8_t *);
-	static const uint16_t BUFFER_SIZE = SIZEY * 3;
+	void (*readImageStartFunctionPtr)(void);
+	void (*readImageStopFunctionPtr)(void);
+	static const uint16_t BUFFER_SIZE = SIZEX * 3;
 
 private:
 	volatile bool capture_request;
@@ -57,8 +65,10 @@ private:
 	volatile bool serialOutputEnabled;
 
 	HardwareSerial *serial;
-	uint8_t buffer[BUFFER_SIZE]; // rgb * sizey
+	uint8_t buffer[BUFFER_SIZE]; // rgb * sizex
 	uint16_t bufferPos;
+	bool edgeEnhacementEnabled;
+	bool denoiseEnabled;
 
 	void read_stop();
 	void capture_next();

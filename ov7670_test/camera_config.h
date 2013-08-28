@@ -83,10 +83,14 @@
 #define REG_HSYEN                   ( 0x31 )        // HSYNC falling edge delay
 #define REG_HREF                    ( 0x32 )        // HREF pieces
 #define REG_TSLB                    ( 0x3a )        // lots of stuff
-#define   TSLB_YLAST                    ( 0x04 )    //   UYVY or VYUY - see com13
+#define   TSLB_YLAST                   	( 0x04 )    //   UYVY or VYUY - see com13
+#define   TSLB_UV                    		( 0x10 )    //   enable special effects
+#define   TSLB_NEGATIVE                 ( 0x20 )    //   enable special effects
 #define REG_COM11                   ( 0x3b )        // Control 11
-#define   COM11_NIGHT                   ( 0x80 )    //   NIght mode enable
-#define   COM11_NMFR                    ( 0x60 )    //   Two bit NM frame rate
+#define   COM11_NIGHT                   ( 0x80 )    //   Night mode enable
+#define   COM11_NIGHT_FR2               ( 0x20 )    //   Night mode 1/2 of normal framerate
+#define   COM11_NIGHT_FR4               ( 0x40 )    //   Night mode 1/4 of normal framerate
+#define   COM11_NIGHT_FR8               ( 0x60 )    //   Night mode 1/8 of normal framerate
 #define   COM11_HZAUTO                  ( 0x10 )    //   Auto detect 50/60 Hz
 #define   COM11_50HZ                    ( 0x08 )    //   Manual 50Hz select
 #define   COM11_EXP                     ( 0x02 )    // 	 Exposure timing can be less than limit
@@ -114,9 +118,12 @@
 #define 	COM15_RGB444                	( 0x10 )   	// 	 RGB444 output
 #define REG_COM16                   ( 0x41 )        // Control 16
 #define   COM16_AWBGAIN                 ( 0x08 )    //   AWB gain enable
+#define   COM16_DENOISE                 ( 0x10 )    //   Enable de-noise auto adjustment
+#define   COM16_EDGE    		            ( 0x20 )    //   Enable edge enhancement
 #define REG_COM17                   ( 0x42 )        // Control 17
 #define   COM17_AECWIN                  ( 0xc0 )    //   AEC window - must match COM4
 #define   COM17_CBAR                    ( 0x08 )    //   DSP Color bar
+#define REG_DENOISE_STRENGTH				( 0x4c )   			// De-noise strength
 
 // size registers
 #define REG_SCALING_XSC             0x70
@@ -211,13 +218,28 @@
 #define COM14_CLOCK_DIV8 (0x03)
 #define COM14_CLOCK_DIV16 (0x04)
 
-#define END_MARKER (0xf0)
+#define REG_MANU (0x67) // special effects register 1
+#define REG_MANV (0x68) // special effects register 2
+
+#define EM (0xf0)
 
 
 struct regval_list
 {
     uint8_t       reg_num;
     uint8_t       value;
+};
+
+
+static struct regval_list ov7670_effects[][4] = {
+			{ {REG_TSLB, TSLB_YLAST}, 													{REG_MANU, 0xc0}, {REG_MANV, 0x80}, {EM, EM} }, // normal, no effect
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV}, 								{REG_MANU, 0xa0}, {REG_MANV, 0x40}, {EM, EM} }, // Antique
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV}, 								{REG_MANU, 0x80}, {REG_MANV, 0xc0}, {EM, EM} }, // Bluish
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV}, 								{REG_MANU, 0x40}, {REG_MANV, 0x40}, {EM, EM} }, // Greenish
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV}, 								{REG_MANU, 0xc0}, {REG_MANV, 0x80}, {EM, EM} }, // Redish
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV}, 								{REG_MANU, 0x80}, {REG_MANV, 0x80}, {EM, EM} }, // B&W
+			{ {REG_TSLB, TSLB_YLAST | TSLB_NEGATIVE}, 					{REG_MANU, 0x80}, {REG_MANV, 0x80}, {EM, EM} }, // Negative
+			{ {REG_TSLB, TSLB_YLAST | TSLB_UV | TSLB_NEGATIVE}, {REG_MANU, 0x80}, {REG_MANV, 0x80}, {EM, EM} }, // B&W negative
 };
 
 static struct regval_list ov7670_qqvga[] = {
@@ -245,7 +267,7 @@ static struct regval_list ov7670_qqvga[] = {
 		{SCALING_PCLK_DIV, SCALING_PCLK_DIV_QQVGA},
 		*/
 
-		{END_MARKER, END_MARKER}, {END_MARKER, END_MARKER}
+		{EM, EM}, {EM, EM}
 };
 
 static struct regval_list ov7670_fmt_rgb444[] =
@@ -266,16 +288,19 @@ static struct regval_list ov7670_fmt_rgb444[] =
 
 		{REG_TSLB, TSLB_YLAST},
 
-    {END_MARKER, END_MARKER}, {END_MARKER, END_MARKER}
+    {EM, EM}, {EM, EM}
 };
 
 static struct regval_list ov7670_fmt_rgb565[] = {
 		{ REG_RGB444, 0 },
 		{ REG_COM15, COM15_R00FF | COM15_RGB565 },
 
-		{ REG_TSLB, TSLB_YLAST},
+		{ REG_TSLB, TSLB_YLAST },
 		{REG_COM1, 0x00}, 	// Magic reserved bit
-		{REG_COM9, 0x38}, 	// 16x gain ceiling; 0x8 is reserved bit
+
+		// 16x gain ceiling; 0x8 is reserved bit
+		// 0x38 = 16x, 0x48 = 32x, 0x58 = 64x, 0x68 = 128x
+		{REG_COM9, 0x38},
 
 		{REG_CMATRIX_1, 0xb3},
 		{REG_CMATRIX_2, 0xb3},
@@ -285,14 +310,14 @@ static struct regval_list ov7670_fmt_rgb565[] = {
 		{REG_CMATRIX_6, 0xe4},
 		{REG_COM13, COM13_GAMMA|COM13_UVSAT},
 
-		{ END_MARKER, END_MARKER }, { END_MARKER, END_MARKER }
+		{ EM, EM }, { EM, EM }
 };
 
 static struct regval_list ov7670_fmt_rgb555[] = {
 		{ REG_RGB444, 0 },
 		{ REG_COM15, COM15_R00FF | COM15_RGB555 },
 
-		{ REG_TSLB, TSLB_YLAST},
+		{ REG_TSLB, TSLB_YLAST },
 
 		{ REG_COM1, 0x00 },
 		{ REG_COM9, 0x38 },     		// 16x gain ceiling; 0x8 is reserved bit
@@ -305,7 +330,7 @@ static struct regval_list ov7670_fmt_rgb555[] = {
 		{REG_CMATRIX_6, 0xe4},
 		{REG_COM13, COM13_GAMMA|COM13_UVSAT},
 
-		{ END_MARKER, END_MARKER }, { END_MARKER, END_MARKER }
+		{ EM, EM }, { EM, EM }
 };
 
 static struct regval_list ov7670_fmt_yuv422[] =
@@ -316,7 +341,13 @@ static struct regval_list ov7670_fmt_yuv422[] =
 		{ REG_TSLB, TSLB_YLAST },
 
 		{ REG_COM1, 0x00 },
-		{ REG_COM9, 0x18 },     		// 16x gain ceiling; 0x8 is reserved bit
+
+		// 16x gain ceiling; 0x8 is reserved bit
+		// 0x38 = 16x, 0x48 = 32x, 0x58 = 64x, 0x68 = 128x
+		{ REG_COM9, 0x68 },
+
+		// 0xff - dark, 0x00 - medium, 0x7f - light
+		{ REG_BRIGHT, 0x00 },
 
 		{REG_CMATRIX_1, 0x80},
 		{REG_CMATRIX_2, 0x80},
@@ -327,7 +358,7 @@ static struct regval_list ov7670_fmt_yuv422[] =
 
     { REG_COM13, COM13_GAMMA | COM13_UVSAT | COM13_UVSWAP },
 
-    {END_MARKER, END_MARKER},   {END_MARKER, END_MARKER}
+    {EM, EM},   {EM, EM}
 };
 
 static struct regval_list ov7670_default[] =
@@ -351,7 +382,7 @@ static struct regval_list ov7670_default[] =
     { REG_COM8, COM8_FASTAEC | COM8_AECSTEP | COM8_BFILT },
     { REG_GAIN, 0 },        { REG_AECH, 0 },
     { REG_COM4, 0x40 }, // magic reserved bit
-    { REG_COM9, 0x18 }, // 4x gain + magic rsvd bit
+    //{ REG_COM9, 0x18 }, // 4x gain + magic rsvd bit
     { REG_BD50MAX, 0x05 },  { REG_BD60MAX, 0x07 },
     { REG_AEW, 0x95 },      { REG_AEB, 0x33 },
     { REG_VPT, 0xe3 },      { REG_HAECC1, 0x78 },
@@ -405,11 +436,11 @@ static struct regval_list ov7670_default[] =
 
     { REG_COM16, COM16_AWBGAIN },   { REG_EDGE, 0 },
     { 0x75, 0x05 },         { 0x76, 0xe1 },
-    { 0x4c, 0 },            { 0x77, 0x01 },
+    { REG_DENOISE_STRENGTH, 0 }, { 0x77, 0x01 },
     //{ REG_COM13, 0xc3 },    { 0x4b, 0x09 },
     { 0x4b, 0x09 },
-    { 0xc9, 0x60 },         { REG_COM16, 0x38 },
-    { 0x56, 0x40 },
+    { 0xc9, 0x60 },         // { REG_COM16, 0x38 },
+    { REG_CONTRAST, 0x40 },
 
     { 0x34, 0x11 },         { REG_COM11, COM11_EXP|COM11_HZAUTO },
     { 0xa4, 0x88 },         { 0x96, 0 },
@@ -435,7 +466,7 @@ static struct regval_list ov7670_default[] =
     { 0x79, 0x05 },         { 0xc8, 0x30 },
     { 0x79, 0x26 },
 
-    {END_MARKER, END_MARKER},   {END_MARKER, END_MARKER}         // END MARKER
+    {EM, EM},   {EM, EM}         // END MARKER
 };
 
 /*
@@ -493,7 +524,7 @@ static struct regval_list qqvga_rgb444[] = {
 	// mystery reg
 	{0xb0, 0x84},
 
-	{END_MARKER, END_MARKER}, {END_MARKER, END_MARKER}
+	{EM, EM}, {EM, EM}
 };
 */
 

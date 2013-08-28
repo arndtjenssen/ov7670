@@ -19,11 +19,77 @@ Ov7670::Ov7670() {
 	serial = 0;
 	bufferPos = 0;
 	bufferFullFunctionPtr = 0;
+	readImageStartFunctionPtr = 0;
+	readImageStopFunctionPtr = 0;
+	edgeEnhacementEnabled = false;
+	denoiseEnabled = false;
 }
 
 void Ov7670::setSerial(HardwareSerial *s) {
 	serial = s;
 }
+
+void Ov7670::nightMode(bool enable) {
+	if (enable) {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM11, COM11_EXP|COM11_HZAUTO);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM11, COM11_EXP|COM11_HZAUTO|COM11_NIGHT|COM11_NIGHT_FR8);
+	} else {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM11, COM11_EXP|COM11_HZAUTO|COM11_NIGHT|COM11_NIGHT_FR8);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM11, COM11_EXP|COM11_HZAUTO);
+	}
+}
+
+// -2 (low contrast ) to +2 (high contrast)
+void Ov7670::contrast(int8_t value) {
+	static const uint8_t values[] = {0x60, 0x50, 0x40, 0x38, 0x30};
+
+	value = min(max((value + 2), 0), 4);
+	SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_CONTRAST, values[value]);
+}
+
+// -2 (dark) to +2 (bright)
+void Ov7670::brightness(int8_t value) {
+	static const uint8_t values[] = {0xb0, 0x98, 0x00, 0x18, 0x30};
+
+	value = min(max((value + 2), 0), 4);
+	SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_BRIGHT, values[value]);
+}
+
+// 0 - Normal, 1 - Antique, 2 - Bluish, 3 - Greenish
+// 4 - Redish, 5 - B&W, 6 - Negative, 7 - B&W negative
+void Ov7670::specialEffect(uint8_t value) {
+	value = min(max((value + 2), 0), 4);
+	transfer_regvals(ov7670_effects[value]);
+}
+
+// 0 to disable, > 0 enable and set edge enhancement factor
+void Ov7670::edgeEnhancement(uint8_t value) {
+	uint8_t v = COM16_AWBGAIN | (denoiseEnabled ? COM16_DENOISE : 0);
+
+	if (value == 0) {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM16, v);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_EDGE, 0);
+	} else {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM16, v | COM16_EDGE);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_EDGE, value);
+	}
+	edgeEnhacementEnabled = (value > 0);
+}
+
+// 0 to disable, > 0 enable and set edge enhancement factor
+void Ov7670::denoise(uint8_t value) {
+	uint8_t v = COM16_AWBGAIN | (edgeEnhacementEnabled ? COM16_EDGE : 0);
+
+	if (value == 0) {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM16, v);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_EDGE, 0);
+	} else {
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_COM16, v | COM16_DENOISE);
+		SimpleI2C.sccb_write(OV7670_I2C_ADDR, REG_DENOISE_STRENGTH, value);
+	}
+	denoiseEnabled = (value > 0);
+}
+
 
 void Ov7670::init() {
 	#ifdef OV_SERIAL_DEBUG
@@ -79,7 +145,6 @@ uint8_t Ov7670::reset(uint8_t mode) {
 	return ret;
 }
 
-
 void Ov7670::vsync_handler() {
 	if (capture_request) {
 		WRITE_RESET;
@@ -94,8 +159,8 @@ void Ov7670::vsync_handler() {
 			capture_done = true;
 		}
 	}
-	last_line_counter = line_counter;
-	line_counter = 0;
+	//last_line_counter = line_counter;
+	//line_counter = 0;
 }
 
 void Ov7670::href_handler() {
@@ -131,12 +196,18 @@ uint8_t Ov7670::read_one_byte() {
 void Ov7670::read_stop() {
 	read_one_byte();
 	READ_CLOCK_HIGH;
+	READ_CLOCK_LOW;
 }
 
 void Ov7670::capture_image() {
   capture_next();
   while(captured() == false);
   _delay_us(10);
+
+  bufferPos = 0;
+  if (readImageStartFunctionPtr) {
+  	(*readImageStartFunctionPtr)();
+  }
 
 	#ifdef OV_SERIAL_DEBUG
   	if (!serialOutputEnabled) {
@@ -181,13 +252,21 @@ void Ov7670::capture_image() {
     	  		d3 = read_one_byte(); // V0
     	  		d4 = read_one_byte(); // Y1
 
-            b = d2 + 1.77200 * (d1 - 128);
-            g = d2 - 0.34414 * (d1 - 128) - 0.71414 * (d3 - 128);
-            r = d2 + 1.40200 * (d3 - 128);
+            // b = d2 + 1.77200 * (d1 - 128);
+            // g = d2 - 0.34414 * (d1 - 128) - 0.71414 * (d3 - 128);
+            // r = d2 + 1.40200 * (d3 - 128);
+
+            b = d2 + 1.4075 * (d1 - 128);
+            g = d2 - 0.3455 * (d1 - 128) - 0.7169 * (d3 - 128);
+            r = d2 + 1.7790 * (d3 - 128);
   				} else {
-            b = d4 + 1.77200 * (d1 - 128);
-            g = d4 - 0.34414 * (d1 - 128) - 0.71414 * (d3 - 128);
-            r = d4 + 1.40200 * (d3 - 128);
+            // b = d4 + 1.77200 * (d1 - 128);
+            // g = d4 - 0.34414 * (d1 - 128) - 0.71414 * (d3 - 128);
+            // r = d4 + 1.40200 * (d3 - 128);
+
+            b = d4 + 1.4075 * (d1 - 128);
+            g = d4 - 0.3455 * (d1 - 128) - 0.7169 * (d3 - 128);
+            r = d4 + 1.7790 * (d3 - 128);
   				}
 
           b = min(max(b, 0), 255);
@@ -196,7 +275,6 @@ void Ov7670::capture_image() {
 
           index++;
   				break;
-
   		}
 
   		buffer[bufferPos] = r;
@@ -214,6 +292,11 @@ void Ov7670::capture_image() {
   }
 
   read_stop();
+
+  if (readImageStopFunctionPtr) {
+  	(*readImageStopFunctionPtr)();
+  }
+
 }
 
 
@@ -229,7 +312,7 @@ uint8_t Ov7670::transfer_regvals(struct regval_list *list) {
 
 	for(;;) {
 		// end marker check
-		if ((list[i].reg_num == END_MARKER) && (list[i].value == END_MARKER)) {
+		if ((list[i].reg_num == EM) && (list[i].value == EM)) {
 			return 1;
 		}
 
