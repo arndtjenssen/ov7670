@@ -12,6 +12,11 @@
 Ov7670 camera;
 uint8_t camera_init_success = false;
 
+#ifdef USE_SD
+#include "SD.h"
+File file;
+#endif
+
 #ifdef USE_TFT
 #include "SPI.h"
 #include "TFT.h"
@@ -22,6 +27,7 @@ uint8_t camera_init_success = false;
 
 TFT screen = TFT(CS, DC, RESET);
 volatile uint8_t linesRead = 0;
+volatile uint16_t snap_counter = 0;
 #endif
 
 void vsync_handler() {
@@ -32,9 +38,25 @@ void href_handler() {
 	camera.href_handler();
 }
 
+char * nrToPictureString(uint8_t dir, uint16_t nr) {
+	static char buffer[20];
+
+	if (dir == 0) {
+		sprintf(buffer, "%s%05u%s", "/snaps/", nr, ".rgb");
+	} else {
+		sprintf(buffer, "%s%04u%s", "/photos/", nr, ".bmp");
+	}
+
+	return buffer;
+}
+
+
 void cameraReadImageStart() {
 	#ifdef USE_TFT
 	linesRead = 0;
+	#endif
+	#ifdef USE_SD
+	file = SD.open(nrToPictureString(0, snap_counter++), O_WRITE | O_TRUNC);
 	#endif
 }
 
@@ -42,9 +64,17 @@ void cameraReadImageStop() {
 	#ifdef USE_TFT
 	Serial << linesRead << endl;
 	#endif
+	#ifdef USE_SD
+	file.flush();
+	file.close();
+	#endif
 }
 
 void cameraBufferFull(uint8_t * buffer) {
+	#ifdef USE_SD
+	file.write(buffer, camera.BUFFER_SIZE);
+	#endif
+
 	#ifdef USE_TFT
 	uint8_t x = 0;
 	for (uint16_t i = 0; i<camera.BUFFER_SIZE; i+=3) {
@@ -56,6 +86,9 @@ void cameraBufferFull(uint8_t * buffer) {
 		Serial << _BYTE(buffer[i]) << _BYTE(buffer[i+1]) << _BYTE(buffer[i+2]);
 	}
 	#endif
+}
+
+void displayPicture(const char * filename) {
 }
 
 void setup() {
@@ -199,3 +232,5 @@ void checkSerialInput() {
 	}
 }
 #endif
+
+extern "C" void __cxa_pure_virtual() { while (1); }

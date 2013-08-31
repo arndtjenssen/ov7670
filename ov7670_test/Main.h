@@ -13,10 +13,10 @@
 #include "Streaming.h"
 #include "OV7670.h"
 
-
 #define SERIAL_INFO
 #define SERIAL_DEBUG
 #define USE_TFT
+//#define USE_SD
 
 //
 // time definitions against ms
