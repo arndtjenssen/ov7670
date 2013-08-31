@@ -33,7 +33,7 @@
 #ifdef __arm__
 #define USE_SEPARATE_FAT_CACHE 1
 #else  // __arm__
-#define USE_SEPARATE_FAT_CACHE 1
+#define USE_SEPARATE_FAT_CACHE 0
 #endif  // __arm__
 //------------------------------------------------------------------------------
 /**
@@ -107,7 +107,7 @@
  * You can redirect stdOut with SdFat::setStdOut(Print* stream) and
  * get the current stream with SdFat::stdOut().
  */
-#define USE_SERIAL_FOR_STD_OUT 0
+#define USE_SERIAL_FOR_STD_OUT 1
 //------------------------------------------------------------------------------
 /**
  * Call flush for endl if ENDL_CALLS_FLUSH is nonzero

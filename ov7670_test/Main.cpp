@@ -12,15 +12,19 @@
 Ov7670 camera;
 uint8_t camera_init_success = false;
 
+#if defined (USE_SD) || defined (USE_TFT)
+#include "SPI.h"
+#endif
+
 #ifdef USE_SD
 #include <SdFat.h>
+#include <avr/eeprom.h>
 #define SD_CS 14 // PD6
 SdFat sd;
 SdFile file;
 #endif
 
 #ifdef USE_TFT
-#include "SPI.h"
 #include "TFT.h"
 
 #define CS		0 // PB0
@@ -29,11 +33,24 @@ SdFile file;
 
 TFT screen = TFT(CS, DC, RESET);
 volatile uint8_t linesRead = 0;
-volatile uint16_t snap_counter = 0;
 #endif
+
+uint16_t EEMEM EEPROMSnapCounter = 0;
+volatile uint16_t snapCounter = 0;
+
+volatile uint8_t vsyncCounter = 0;
+volatile uint32_t runtime = 0;
+volatile bool oneSecondPassed = false;
+volatile bool takePictures = false;
 
 void vsync_handler() {
 	camera.vsync_handler();
+	vsyncCounter++;
+	if (vsyncCounter > 15) { // with qqvga fps = 15
+		vsyncCounter = 0;
+		runtime++;
+		oneSecondPassed = true;
+	}
 }
 
 void href_handler() {
@@ -58,17 +75,14 @@ void cameraReadImageStart() {
 	linesRead = 0;
 	#endif
 	#ifdef USE_SD
-	file.open(nrToPictureString(0, snap_counter++), O_WRITE | O_CREAT | O_TRUNC);
+	file.open(nrToPictureString(0, snapCounter++), O_WRITE | O_CREAT | O_TRUNC);
 	#endif
 }
 
 void cameraReadImageStop() {
-	#ifdef USE_TFT
-	Serial << linesRead << endll;
-	#endif
 	#ifdef USE_SD
-	//file.flush();
 	file.close();
+	eeprom_write_word(&EEPROMSnapCounter, snapCounter);
 	#endif
 }
 
@@ -90,10 +104,35 @@ void cameraBufferFull(uint8_t * buffer) {
 	#endif
 }
 
-void displayPicture(const char * filename) {
+void displayPictureNr(uint16_t nr) {
+	file.open(nrToPictureString(0, nr), O_READ);
+
+	for (uint8_t y=0; y<SIZEY; y++) {
+		file.read(camera.buffer, camera.BUFFER_SIZE);
+
+		uint8_t x = 0;
+		for (uint16_t i = 0; i<camera.BUFFER_SIZE; i+=3) {
+			screen.drawPixel(x++, y, screen.newColor(camera.buffer[i], camera.buffer[i+1], camera.buffer[i+2]));
+		}
+	}
+	file.close();
 }
 
 void setup() {
+	randomSeed(analogRead(13));
+	snapCounter = eeprom_read_word(&EEPROMSnapCounter);
+
+	#ifdef SERIAL_INFO
+	Serial.begin(57600);
+	delay(200);
+	Serial << F("snaps: ") << snapCounter << endll;
+	#endif
+
+	#ifdef USE_SD
+	if (!sd.begin(SD_CS, SPI_FULL_SPEED)) sd.initErrorHalt();
+	sd.chdir("snaps", false);
+	#endif
+
 	#ifdef USE_TFT
 	screen.begin();
 	screen.setRotation(3);
@@ -102,17 +141,10 @@ void setup() {
 	screen.setTextSize(2);
 	#endif
 
-	#ifdef USE_SD
-	if (!sd.begin(SD_CS, SPI_FULL_SPEED)) sd.initErrorHalt();
-	sd.chdir("snaps", false);
-	// sd.begin(SD_CS, SPI_HALF_SPEED);
-	#endif
-
-	// Serial.begin(115200);
-	Serial.begin(57600);
-
 	// camera
+	#ifdef SERIAL_INFO
 	camera.setSerial(&Serial);
+	#endif
 
 	camera.bufferFullFunctionPtr = &cameraBufferFull;
 	camera.readImageStartFunctionPtr = &cameraReadImageStart;
@@ -135,10 +167,23 @@ void loop() {
 	#ifdef SERIAL_INFO
 	checkSerialInput();
 	#endif
+
+	if (oneSecondPassed) {
+		oneSecondPassed = false;
+		if (takePictures) {
+			if (runtime % 10 == 0) {
+				#ifdef SERIAL_DEBUG
+				serialTimeStamp();
+				Serial << F("cap - ") << snapCounter << endll;
+				#endif
+				camera.capture_image();
+			}
+		}
+	}
 }
 
 
-#if defined(SERIAL_INFO) || defined(SIMULATE)
+#ifdef SERIAL_INFO
 void serialTimeStamp() {
 	char buffer[20];
 
@@ -154,7 +199,6 @@ void serialTimeStamp() {
 
 	Serial << buffer << "::  ";
 }
-#endif
 
 #ifdef SERIAL_INFO
 int readIntFromSerial() {
@@ -235,6 +279,21 @@ void checkSerialInput() {
     	Serial << v << endll;
     	break;
 
+    case 'r':
+    	v = random(snapCounter);
+    	Serial << F("rand: ") << v << endll;
+    	displayPictureNr(v);
+    	break;
+
+    case 't':
+    	takePictures = !takePictures;
+    	Serial << F("take pictures") << takePictures << endll;
+    	break;
+
+		case 'x' :
+			Serial << F("Reset eeprom") << endll;
+			eeprom_write_word(&EEPROMSnapCounter, 0);
+			break;
     }
 
 	}

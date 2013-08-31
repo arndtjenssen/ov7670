@@ -92,21 +92,19 @@ void Ov7670::denoise(uint8_t value) {
 
 
 void Ov7670::init() {
-	#ifdef OV_SERIAL_DEBUG
-	serial->println(F("setup ports"));
-	#endif
+	if (serial)
+		serial->println(F("setup ports"));
 	setup_ports();
 
-	#ifdef OV_SERIAL_DEBUG
-	serial->println(F("i2c init"));
-	#endif
+	if (serial)
+		serial->println(F("i2c init"));
 	SimpleI2C.init();
 
 	init_success = reset(MODE_YUV);
-	#ifdef OV_SERIAL_DEBUG
-	serial->print(F("init: "));
-	serial->println(init_success);
-	#endif
+	if (serial) {
+		serial->print(F("init: "));
+		serial->println(init_success);
+	}
 }
 
 /**
@@ -209,12 +207,6 @@ void Ov7670::capture_image() {
   	(*readImageStartFunctionPtr)();
   }
 
-	#ifdef OV_SERIAL_DEBUG
-  	if (!serialOutputEnabled) {
-  		//serial->print(F("image captured: "));
-  		//serial->println(last_line_counter);
-  	}
-	#endif
   READ_RESET;
 
   int r=0, g=0, b=0, d1 = 0, d2 = 0, d3 = 0, d4 = 0;

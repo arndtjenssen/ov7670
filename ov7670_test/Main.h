@@ -27,7 +27,7 @@ const long MINUTE = 60000; // 60000 milliseconds in a minute
 const long SECOND =  1000; // 1000 milliseconds in a second
 
 
-
+void serialTimeStamp();
 void checkSerialInput();
 void write_reset();
 

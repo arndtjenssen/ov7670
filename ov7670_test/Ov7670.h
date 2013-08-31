@@ -16,8 +16,6 @@
 #include "SimpleI2C.h"
 #include <HardwareSerial.h>
 
-#define OV_SERIAL_DEBUG
-
 #define VSYNC_INT 2
 #define HREF_INT 1
 
@@ -41,7 +39,6 @@ public:
 	void setSerial(HardwareSerial *s);
 	void vsync_handler();
 	void href_handler();
-	void serialOutput(bool enabled);
 	void nightMode(bool enable);
 	void contrast(int8_t);
 	void brightness(int8_t);
@@ -54,6 +51,7 @@ public:
 	void (*readImageStartFunctionPtr)(void);
 	void (*readImageStopFunctionPtr)(void);
 	static const uint16_t BUFFER_SIZE = SIZEX * 3;
+	uint8_t buffer[BUFFER_SIZE];
 
 private:
 	volatile bool capture_request;
@@ -62,10 +60,8 @@ private:
 	volatile uint16_t line_counter;
 	volatile uint16_t last_line_counter;
 	volatile uint8_t camera_mode;
-	volatile bool serialOutputEnabled;
 
 	HardwareSerial *serial;
-	uint8_t buffer[BUFFER_SIZE]; // rgb * sizex
 	uint16_t bufferPos;
 	bool edgeEnhacementEnabled;
 	bool denoiseEnabled;
