@@ -158,6 +158,7 @@
 								<option id="de.innot.avreclipse.cppcompiler.option.optimize.2020045349" name="Optimization Level" superClass="de.innot.avreclipse.cppcompiler.option.optimize" value="de.innot.avreclipse.cppcompiler.optimize.size" valueType="enumerated"/>
 								<option id="de.innot.avreclipse.cppcompiler.option.incpath.1901377377" name="Include Paths (-I)" superClass="de.innot.avreclipse.cppcompiler.option.incpath" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${AVR_INCLUDE}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SdFat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${1284p-16mhz-lib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${1284p-inc}&quot;"/>
 								</option>

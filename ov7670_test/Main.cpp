@@ -13,8 +13,10 @@ Ov7670 camera;
 uint8_t camera_init_success = false;
 
 #ifdef USE_SD
-#include "SD.h"
-File file;
+#include <SdFat.h>
+#define SD_CS 14 // PD6
+SdFat sd;
+SdFile file;
 #endif
 
 #ifdef USE_TFT
@@ -56,16 +58,16 @@ void cameraReadImageStart() {
 	linesRead = 0;
 	#endif
 	#ifdef USE_SD
-	file = SD.open(nrToPictureString(0, snap_counter++), O_WRITE | O_TRUNC);
+	file.open(nrToPictureString(0, snap_counter++), O_WRITE | O_CREAT | O_TRUNC);
 	#endif
 }
 
 void cameraReadImageStop() {
 	#ifdef USE_TFT
-	Serial << linesRead << endl;
+	Serial << linesRead << endll;
 	#endif
 	#ifdef USE_SD
-	file.flush();
+	//file.flush();
 	file.close();
 	#endif
 }
@@ -98,6 +100,12 @@ void setup() {
 	screen.background(0, 0, 0);
 	screen.stroke(255,255,255);
 	screen.setTextSize(2);
+	#endif
+
+	#ifdef USE_SD
+	if (!sd.begin(SD_CS, SPI_FULL_SPEED)) sd.initErrorHalt();
+	sd.chdir("snaps", false);
+	// sd.begin(SD_CS, SPI_HALF_SPEED);
 	#endif
 
 	// Serial.begin(115200);
@@ -181,28 +189,28 @@ void checkSerialInput() {
 
     case '0':
     	camera.reset(MODE_RGB444);
-    	Serial << F("mode: RGB444 - ") << camera.reset(MODE_RGB444) << endl;
+    	Serial << F("mode: RGB444 - ") << camera.reset(MODE_RGB444) << endll;
     	break;
 
     case '1':
-    	Serial << F("mode: RGB555 - ") << camera.reset(MODE_RGB555) << endl;
+    	Serial << F("mode: RGB555 - ") << camera.reset(MODE_RGB555) << endll;
     	break;
 
     case '2':
-    	Serial << F("mode: RGB565 - ") <<  camera.reset(MODE_RGB565) << endl;
+    	Serial << F("mode: RGB565 - ") <<  camera.reset(MODE_RGB565) << endll;
     	break;
 
     case '3':
-    	Serial << F("mode: YUV - ") << camera.reset(MODE_YUV) << endl;
+    	Serial << F("mode: YUV - ") << camera.reset(MODE_YUV) << endll;
     	break;
 
     case 'n':
     	if (readIntFromSerial() == 0) {
       	camera.nightMode(true);
-      	Serial << F("night mode enabled") << endl;
+      	Serial << F("night mode enabled") << endll;
     	} else {
       	camera.nightMode(false);
-      	Serial << F("night mode disabled") << endl;
+      	Serial << F("night mode disabled") << endll;
     	}
     	break;
 
@@ -210,21 +218,21 @@ void checkSerialInput() {
     	Serial << F("contrast: ");
     	v = readIntFromSerial();
     	camera.contrast(v);
-    	Serial << v << endl;
+    	Serial << v << endll;
     	break;
 
     case 'b':
     	Serial << F("brightness: ");
     	v = readIntFromSerial();
     	camera.brightness(v);
-    	Serial << v << endl;
+    	Serial << v << endll;
     	break;
 
     case 's':
     	Serial << F("effect: ");
     	v = readIntFromSerial();
     	camera.specialEffect(v);
-    	Serial << v << endl;
+    	Serial << v << endll;
     	break;
 
     }

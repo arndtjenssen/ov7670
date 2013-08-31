@@ -16,7 +16,7 @@
 #define SERIAL_INFO
 #define SERIAL_DEBUG
 #define USE_TFT
-//#define USE_SD
+#define USE_SD
 
 //
 // time definitions against ms
