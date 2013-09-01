@@ -76,7 +76,7 @@ void Ov7670::edgeEnhancement(uint8_t value) {
 	edgeEnhacementEnabled = (value > 0);
 }
 
-// 0 to disable, > 0 enable and set edge enhancement factor
+// 0 to disable, > 0 enable and set denoise factor
 void Ov7670::denoise(uint8_t value) {
 	uint8_t v = COM16_AWBGAIN | (edgeEnhacementEnabled ? COM16_EDGE : 0);
 

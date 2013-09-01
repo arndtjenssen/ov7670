@@ -8,6 +8,7 @@
  */
 
 #include "Main.h"
+#include <avr/eeprom.h>
 
 Ov7670 camera;
 uint8_t camera_init_success = false;
@@ -18,7 +19,6 @@ uint8_t camera_init_success = false;
 
 #ifdef USE_SD
 #include <SdFat.h>
-#include <avr/eeprom.h>
 #define SD_CS 14 // PD6
 SdFat sd;
 SdFile file;
@@ -34,6 +34,12 @@ SdFile file;
 TFT screen = TFT(CS, DC, RESET);
 volatile uint8_t linesRead = 0;
 #endif
+
+#if defined (USE_SD) || defined (USE_TFT)
+#include "Image.h"
+Image image(&camera, &screen);
+#endif
+
 
 uint16_t EEMEM EEPROMSnapCounter = 0;
 volatile uint16_t snapCounter = 0;
@@ -57,25 +63,12 @@ void href_handler() {
 	camera.href_handler();
 }
 
-char * nrToPictureString(uint8_t dir, uint16_t nr) {
-	static char buffer[20];
-
-	if (dir == 0) {
-		sprintf(buffer, "%s%05u%s", "/snaps/", nr, ".rgb");
-	} else {
-		sprintf(buffer, "%s%04u%s", "/photos/", nr, ".bmp");
-	}
-
-	return buffer;
-}
-
-
 void cameraReadImageStart() {
 	#ifdef USE_TFT
 	linesRead = 0;
 	#endif
 	#ifdef USE_SD
-	file.open(nrToPictureString(0, snapCounter++), O_WRITE | O_CREAT | O_TRUNC);
+	file.open(image.nrToPictureString(0, snapCounter++), O_WRITE | O_CREAT | O_TRUNC);
 	#endif
 }
 
@@ -102,20 +95,6 @@ void cameraBufferFull(uint8_t * buffer) {
 		Serial << _BYTE(buffer[i]) << _BYTE(buffer[i+1]) << _BYTE(buffer[i+2]);
 	}
 	#endif
-}
-
-void displayPictureNr(uint16_t nr) {
-	file.open(nrToPictureString(0, nr), O_READ);
-
-	for (uint8_t y=0; y<SIZEY; y++) {
-		file.read(camera.buffer, camera.BUFFER_SIZE);
-
-		uint8_t x = 0;
-		for (uint16_t i = 0; i<camera.BUFFER_SIZE; i+=3) {
-			screen.drawPixel(x++, y, screen.newColor(camera.buffer[i], camera.buffer[i+1], camera.buffer[i+2]));
-		}
-	}
-	file.close();
 }
 
 void setup() {
@@ -146,6 +125,7 @@ void setup() {
 	camera.setSerial(&Serial);
 	#endif
 
+	// register callback functions
 	camera.bufferFullFunctionPtr = &cameraBufferFull;
 	camera.readImageStartFunctionPtr = &cameraReadImageStart;
 	camera.readImageStopFunctionPtr = &cameraReadImageStop;
@@ -200,7 +180,6 @@ void serialTimeStamp() {
 	Serial << buffer << "::  ";
 }
 
-#ifdef SERIAL_INFO
 int readIntFromSerial() {
 	int temp = 0;
 	char buf[8];
@@ -279,11 +258,20 @@ void checkSerialInput() {
     	Serial << v << endll;
     	break;
 
+		#if defined (USE_TFT) && defined (USE_SD)
     case 'r':
     	v = random(snapCounter);
     	Serial << F("rand: ") << v << endll;
-    	displayPictureNr(v);
+    	image.displayRgbImageNr(v);
     	break;
+
+    case 'p':
+    	v = random(510);
+    	Serial << F("bmp: ") << v << endll;
+    	image.displayBitmapNr(v);
+    	break;
+
+		#endif
 
     case 't':
     	takePictures = !takePictures;

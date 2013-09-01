@@ -85,6 +85,7 @@ void static inline setup_ports() {
 
 	CONTROL_DDR = AL422_RCK | AL422_WEN | AL422_RRST | AL422_WRST;
 	CONTROL_PORT = AL422_RRST | AL422_WRST;
+	CONTROL_PORT &= ~(AL422_WEN);
 }
 
 #endif /* OV7670_PORTS_H_ */
