@@ -18,7 +18,7 @@ The code works as well with an Arduino UNO but you need to change the ports defi
 No TFT possible since the UNO has not enought i/o pins. You can disable the TFT and SD in main.h
 
 This code uses the mighty-1824p library (not included) from maniacbug (thanks!!) on github: https://github.com/maniacbug/mighty-1284p which 
-applies changes to the vanilla Arduino library to run on a ATMEGA1284p. You could get rid of Arduino the library but 
+applies changes to the vanilla Arduino library to run on a ATMEGA1284p. You could get rid of the Arduino library but 
 that would involve changes in main.cpp and the SPI and TFT classes.
 
 Breadboard diagram (black text: OV7670 wiring, blue text:TFT wiring): ov7670_breadboard.pdf
